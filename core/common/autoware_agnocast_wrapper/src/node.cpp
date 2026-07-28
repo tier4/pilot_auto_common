@@ -16,7 +16,6 @@
 
 #include <memory>
 #include <string>
-#include <utility>
 #include <vector>
 
 #ifdef USE_AGNOCAST_ENABLED
@@ -74,14 +73,14 @@ rclcpp::Time Node::now() const
   return visit_node([](const auto & n) { return n->now(); });
 }
 
-rclcpp::node_interfaces::NodeBaseInterface::SharedPtr Node::get_node_base_interface() const
+rclcpp::node_interfaces::NodeBaseInterface::SharedPtr Node::get_node_base_interface()
 {
-  return visit_node([](const auto & n) { return n->get_node_base_interface(); });
+  return visit_node([](auto & n) { return n->get_node_base_interface(); });
 }
 
-rclcpp::node_interfaces::NodeTopicsInterface::SharedPtr Node::get_node_topics_interface() const
+rclcpp::node_interfaces::NodeTopicsInterface::SharedPtr Node::get_node_topics_interface()
 {
-  return visit_node([](const auto & n) { return n->get_node_topics_interface(); });
+  return visit_node([](auto & n) { return n->get_node_topics_interface(); });
 }
 
 rclcpp::node_interfaces::NodeParametersInterface::SharedPtr Node::get_node_parameters_interface()
@@ -183,8 +182,7 @@ rcl_interfaces::msg::ListParametersResult Node::list_parameters(
 rclcpp::node_interfaces::OnSetParametersCallbackHandle::SharedPtr
 Node::add_on_set_parameters_callback(OnSetParametersCallbackType callback)
 {
-  return visit_node(
-    [&](auto & n) { return n->add_on_set_parameters_callback(std::move(callback)); });
+  return visit_node([&](auto & n) { return n->add_on_set_parameters_callback(callback); });
 }
 
 void Node::remove_on_set_parameters_callback(
