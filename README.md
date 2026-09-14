@@ -12,7 +12,7 @@ This branch only holds the mirror configuration and its tooling. See the mirror 
 | `awf-core-latest` | `autowarefoundation/autoware_core:main`, `common/`, `testing/` |
 | `feat/v0.64/e2e_scenario_pass` | `tier4/autoware_universe:feat/v0.64/e2e_scenario_pass`, the same paths as the universe mirror |
 | `feat/v0.64/e2e_scenario_pass-core` | `tier4/autoware_core:feat/v0.64/e2e_scenario_pass`, `common/`, `testing/` |
-| `awf-combined-latest` | `feat/v0.64/e2e_scenario_pass` and `feat/v0.64/e2e_scenario_pass-core` replayed into one linear history |
+| `e2e-combined-latest` | `feat/v0.64/e2e_scenario_pass` and `feat/v0.64/e2e_scenario_pass-core` replayed into one linear history |
 
 The combined branch treats the tier4 `feat/v0.64/e2e_scenario_pass` branches of
 `autoware_universe` and `autoware_core` as the trusted histories (not AWF
@@ -20,7 +20,7 @@ The combined branch treats the tier4 `feat/v0.64/e2e_scenario_pass` branches of
 root comes from the universe e2e mirror.
 
 ```text
-awf-combined-latest/
+e2e-combined-latest/
 ├── universe/common/            # from feat/v0.64/e2e_scenario_pass
 ├── core/common/                # from feat/v0.64/e2e_scenario_pass-core
 ├── core/testing/
