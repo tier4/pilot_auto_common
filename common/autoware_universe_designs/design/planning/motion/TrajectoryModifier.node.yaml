@@ -1,12 +1,12 @@
 autoware_system_design_format: 0.3.0
 # node information
-name: TrajectoryProcessor.node
+name: TrajectoryModifier.node
 package:
-  name: autoware_trajectory_processor
+  name: autoware_trajectory_modifier
   provider: autoware
 launch:
-  plugin: autoware::trajectory_processor::TrajectoryProcessor
-  executable: autoware_trajectory_processor_node
+  plugin: autoware::trajectory_modifier::TrajectoryModifier
+  executable: autoware_trajectory_modifier_node
 # interfaces
 subscribers:
   - name: trajectories
@@ -48,8 +48,8 @@ publishers:
     remap_target: ~/obstacle_stop/debug/marker
 # parameters
 param_files:
-  - name: trajectory_processor_param
-    default: config/trajectory_processor.param.yaml
+  - name: trajectory_modifier_param
+    default: config/trajectory_modifier.param.yaml
 param_values: []
 # processes
 processes:
