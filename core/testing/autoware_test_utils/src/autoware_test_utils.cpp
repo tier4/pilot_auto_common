@@ -289,9 +289,9 @@ LaneletRoute makeBehaviorNormalRoute()
   LaneletRoute route;
   route.header.frame_id = "map";
   route.start_pose =
-    createPose({3722.16015625, 73723.515625, 0.233112560494183, 0.9724497591854532});
+    createPose({3722.16015625, 73723.515625, 0.233112560494183, 0.4712388980354532});
   route.goal_pose =
-    createPose({3778.362060546875, 73721.2734375, -0.5107480274693206, 0.8597304533609347});
+    createPose({3778.362060546875, 73721.2734375, -0.5107480274693206, -1.0914735185525142});
 
   std::vector<int> primitive_ids = {9102, 9540, 9546, 9178, 54, 112};
   for (int id : primitive_ids) {
@@ -336,7 +336,8 @@ LaneletRoute makeBehaviorGoalOnLeftSideRoute()
 
 // cppcheck-suppress unusedFunction
 void spinSomeNodes(
-  rclcpp::Node::SharedPtr test_node, rclcpp::Node::SharedPtr target_node, const int repeat_count)
+  rclcpp::node_interfaces::NodeBaseInterface::SharedPtr test_node,
+  rclcpp::node_interfaces::NodeBaseInterface::SharedPtr target_node, const int repeat_count)
 {
   rclcpp::executors::SingleThreadedExecutor executor;
   executor.add_node(test_node);
