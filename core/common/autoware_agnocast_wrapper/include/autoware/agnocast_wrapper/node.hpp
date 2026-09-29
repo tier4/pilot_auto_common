@@ -138,6 +138,7 @@ public:
   rclcpp::node_interfaces::NodeBaseInterface::SharedPtr get_node_base_interface() const;
   rclcpp::node_interfaces::NodeTopicsInterface::SharedPtr get_node_topics_interface() const;
   rclcpp::node_interfaces::NodeParametersInterface::SharedPtr get_node_parameters_interface() const;
+  rclcpp::node_interfaces::NodeGraphInterface::SharedPtr get_node_graph_interface() const;
 
   // ===== Callback groups =====
   rclcpp::CallbackGroup::SharedPtr create_callback_group(
@@ -181,6 +182,19 @@ public:
     const rclcpp::node_interfaces::OnSetParametersCallbackHandle * const handler);
 
   // ===== Parameters (template) =====
+  template <typename ParameterT>
+  bool get_parameter_or(
+    const std::string & name, ParameterT & value, const ParameterT & alternative_value) const
+  {
+    rclcpp::Parameter parameter;
+    if (get_parameter(name, parameter)) {
+      value = parameter.get_value<ParameterT>();
+      return true;
+    }
+    value = alternative_value;
+    return false;
+  }
+
   template <typename ParameterT>
   auto declare_parameter(
     const std::string & name, const ParameterT & default_value,
@@ -622,6 +636,10 @@ public:
   {
     return node_->get_node_parameters_interface();
   }
+  rclcpp::node_interfaces::NodeGraphInterface::SharedPtr get_node_graph_interface() const
+  {
+    return node_->get_node_graph_interface();
+  }
 
   // ===== Callback groups =====
   rclcpp::CallbackGroup::SharedPtr create_callback_group(
@@ -710,6 +728,19 @@ public:
   }
 
   // ===== Parameters (template) =====
+  template <typename ParameterT>
+  bool get_parameter_or(
+    const std::string & name, ParameterT & value, const ParameterT & alternative_value) const
+  {
+    rclcpp::Parameter parameter;
+    if (get_parameter(name, parameter)) {
+      value = parameter.get_value<ParameterT>();
+      return true;
+    }
+    value = alternative_value;
+    return false;
+  }
+
   template <typename ParameterT>
   auto declare_parameter(
     const std::string & name, const ParameterT & default_value,
