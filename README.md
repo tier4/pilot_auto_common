@@ -12,18 +12,27 @@ This branch only holds the mirror configuration and its tooling. See the mirror 
 | `awf-core-latest` | `autowarefoundation/autoware_core:main`, `common/`, `testing/` |
 | `feat/v0.64/e2e_scenario_pass` | `tier4/autoware_universe:feat/v0.64/e2e_scenario_pass`, the same paths as the universe mirror |
 | `feat/v0.64/e2e_scenario_pass-core` | `tier4/autoware_core:feat/v0.64/e2e_scenario_pass`, `common/`, `testing/` |
-| `tier4-e2e-combined-latest` | `feat/v0.64/e2e_scenario_pass` and `feat/v0.64/e2e_scenario_pass-core` replayed into one linear history |
+| `awf-core-map-height-fitter` | `autowarefoundation/autoware_core:main`, `common/autoware_map_height_fitter/` only, filed under `awf_core/common/` |
+| `tier4-e2e-combined-latest` | `feat/v0.64/e2e_scenario_pass`, `feat/v0.64/e2e_scenario_pass-core` and `awf-core-map-height-fitter` replayed into one linear history |
 
 The combined branch treats the tier4 `feat/v0.64/e2e_scenario_pass` branches of
 `autoware_universe` and `autoware_core` as the trusted histories (not AWF
 `main`). Each member is filed under a disjoint path; everything else at the
 root comes from the universe e2e mirror.
 
+The one exception is `autoware_map_height_fitter`, taken from AWF `main`.
+autowarefoundation/autoware_core#1490 moved it from `map/` to `common/`, so
+`pilot_auto_localization_map` (which follows AWF `main`) no longer carries it,
+while the tier4 fork still keeps it under `map/`. It lives under its own
+top-level `awf_core/` so it never nests inside `core/common/`, whose subtree oid
+is what resuming the combined branch matches on.
+
 ```text
 tier4-e2e-combined-latest/
 ├── universe/common/            # from feat/v0.64/e2e_scenario_pass
 ├── core/common/                # from feat/v0.64/e2e_scenario_pass-core
 ├── core/testing/
+├── awf_core/common/autoware_map_height_fitter/   # from AWF main (awf-core-map-height-fitter)
 └── .github/  docs/  LICENSE  NOTICE  README.md  ...
 ```
 

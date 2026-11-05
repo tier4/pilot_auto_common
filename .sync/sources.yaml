@@ -90,6 +90,24 @@ sources:
         pattern: (?<!autowarefoundation)(?<!autowarefoundation/autoware_core)#(\d+)
         replacement: tier4/autoware_core#\1
 
+  awf_core_map_height_fitter:
+    upstream: https://github.com/autowarefoundation/autoware_core.git
+    ref: main
+    # autowarefoundation/autoware_core#1490 moved autoware_map_height_fitter
+    # from map/ to common/. The tier4 e2e fork still has it under map/, and
+    # pilot_auto_localization_map (which follows AWF main) no longer carries
+    # it, so this single package is taken from AWF main and filed under its
+    # own top-level directory in tier4-e2e-combined-latest.
+    #
+    # Only common/ is kept, so history before the move is not mirrored.
+    mirror_branch: awf-core-map-height-fitter
+    paths:
+      - path: common/autoware_map_height_fitter/
+        rename: awf_core/common/autoware_map_height_fitter/
+    message_rules:
+      - pattern: '#(\d+)'
+        replacement: autowarefoundation/autoware_core#\1
+
 combined:
   # Same members as e2e-combined-latest; new name for consistency with planning
   # / control (universe+core only). First publish builds from scratch.
@@ -108,3 +126,8 @@ combined:
         rename:
           common: core/common
           testing: core/testing
+      # Exception to the tier4-only rule above: one package from AWF main that
+      # the tier4 fork does not provide under common/ (see the source). Kept
+      # under its own top-level awf_core/ so it never nests inside core/common,
+      # whose subtree oid is what resuming matches on.
+      - source: awf_core_map_height_fitter
