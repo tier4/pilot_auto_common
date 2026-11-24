@@ -20,11 +20,25 @@
 #include <sensor_msgs/msg/point_cloud2.hpp>
 #include <sensor_msgs/msg/point_field.hpp>
 
+#include <algorithm>
 #include <vector>
 
 namespace autoware::point_types
 {
 
+// Two families of checks live here:
+//
+// - is_data_layout_compatible_with_point_*: the input's fields match the point type's memory
+//   layout, so the data can be read through a pointer to that type. Some of these are *prefix*
+//   checks (further trailing fields are allowed, so the input's point_step may exceed
+//   sizeof(PointT)), others are *exact*; each function states which. Prefix-compatible data must
+//   be read with the input's point_step, never with sizeof(PointT).
+//
+// - is_data_convertible_to: the input carries every field of a target layout by name, datatype
+//   and count, at arbitrary offsets. Sufficient for a per-field copy (e.g. via
+//   sensor_msgs::PointCloud2Iterator), never for a reinterpret_cast.
+
+/// Prefix check: fields 0-3 must be PointXYZI's; further fields are allowed.
 inline bool is_data_layout_compatible_with_point_xyzi(
   const std::vector<sensor_msgs::msg::PointField> & fields)
 {
@@ -63,6 +77,7 @@ inline bool is_data_layout_compatible_with_point_xyzi(const sensor_msgs::msg::Po
   return is_data_layout_compatible_with_point_xyzi(input.fields);
 }
 
+/// Prefix check: fields 0-5 must be PointXYZIRC's; further fields are allowed.
 inline bool is_data_layout_compatible_with_point_xyzirc(
   const std::vector<sensor_msgs::msg::PointField> & fields)
 {
@@ -111,6 +126,62 @@ inline bool is_data_layout_compatible_with_point_xyzirc(const sensor_msgs::msg::
   return is_data_layout_compatible_with_point_xyzirc(input.fields);
 }
 
+/// Exact check: the fields must be exactly PointXYZIRCT's.
+inline bool is_data_layout_compatible_with_point_xyzirct(
+  const std::vector<sensor_msgs::msg::PointField> & fields)
+{
+  using PointIndex = autoware::point_types::PointXYZIRCTIndex;
+  using PointType = autoware::point_types::PointXYZIRCT;
+
+  if (fields.size() != 7) {
+    return false;
+  }
+  bool same_layout = true;
+  const auto & field_x = fields.at(static_cast<std::size_t>(PointIndex::X));
+  same_layout &= field_x.name == "x";
+  same_layout &= field_x.offset == offsetof(PointType, x);
+  same_layout &= field_x.datatype == sensor_msgs::msg::PointField::FLOAT32;
+  same_layout &= field_x.count == 1;
+  const auto & field_y = fields.at(static_cast<std::size_t>(PointIndex::Y));
+  same_layout &= field_y.name == "y";
+  same_layout &= field_y.offset == offsetof(PointType, y);
+  same_layout &= field_y.datatype == sensor_msgs::msg::PointField::FLOAT32;
+  same_layout &= field_y.count == 1;
+  const auto & field_z = fields.at(static_cast<std::size_t>(PointIndex::Z));
+  same_layout &= field_z.name == "z";
+  same_layout &= field_z.offset == offsetof(PointType, z);
+  same_layout &= field_z.datatype == sensor_msgs::msg::PointField::FLOAT32;
+  same_layout &= field_z.count == 1;
+  const auto & field_intensity = fields.at(static_cast<std::size_t>(PointIndex::Intensity));
+  same_layout &= field_intensity.name == "intensity";
+  same_layout &= field_intensity.offset == offsetof(PointType, intensity);
+  same_layout &= field_intensity.datatype == sensor_msgs::msg::PointField::UINT8;
+  same_layout &= field_intensity.count == 1;
+  const auto & field_return_type = fields.at(static_cast<std::size_t>(PointIndex::ReturnType));
+  same_layout &= field_return_type.name == "return_type";
+  same_layout &= field_return_type.offset == offsetof(PointType, return_type);
+  same_layout &= field_return_type.datatype == sensor_msgs::msg::PointField::UINT8;
+  same_layout &= field_return_type.count == 1;
+  const auto & field_channel = fields.at(static_cast<std::size_t>(PointIndex::Channel));
+  same_layout &= field_channel.name == "channel";
+  same_layout &= field_channel.offset == offsetof(PointType, channel);
+  same_layout &= field_channel.datatype == sensor_msgs::msg::PointField::UINT16;
+  same_layout &= field_channel.count == 1;
+  const auto & field_time_stamp = fields.at(static_cast<std::size_t>(PointIndex::TimeStamp));
+  same_layout &= field_time_stamp.name == "time_stamp";
+  same_layout &= field_time_stamp.offset == offsetof(PointType, time_stamp);
+  same_layout &= field_time_stamp.datatype == sensor_msgs::msg::PointField::UINT32;
+  same_layout &= field_time_stamp.count == 1;
+  return same_layout;
+}
+
+inline bool is_data_layout_compatible_with_point_xyzirct(
+  const sensor_msgs::msg::PointCloud2 & input)
+{
+  return is_data_layout_compatible_with_point_xyzirct(input.fields);
+}
+
+/// Prefix check: fields 0-8 must be PointXYZIRADRT's; further fields are allowed.
 inline bool is_data_layout_compatible_with_point_xyziradrt(
   const std::vector<sensor_msgs::msg::PointField> & fields)
 {
@@ -175,6 +246,7 @@ inline bool is_data_layout_compatible_with_point_xyziradrt(
   return is_data_layout_compatible_with_point_xyziradrt(input.fields);
 }
 
+/// Exact check: the fields must be exactly PointXYZIRCAEDT's.
 inline bool is_data_layout_compatible_with_point_xyzircaedt(
   const std::vector<sensor_msgs::msg::PointField> & fields)
 {
@@ -244,6 +316,7 @@ inline bool is_data_layout_compatible_with_point_xyzircaedt(
   return is_data_layout_compatible_with_point_xyzircaedt(input.fields);
 }
 
+/// Exact check: the fields must be exactly PointXYZCPE's.
 inline bool is_data_layout_compatible_with_point_xyzcpe(
   const std::vector<sensor_msgs::msg::PointField> & fields)
 {
@@ -356,6 +429,49 @@ inline std::vector<sensor_msgs::msg::PointField> create_fields_point_xyzirc()
   fields[static_cast<std::size_t>(PointIndex::Channel)].datatype =
     sensor_msgs::msg::PointField::UINT16;
   fields[static_cast<std::size_t>(PointIndex::Channel)].count = 1;
+
+  return fields;
+}
+
+inline std::vector<sensor_msgs::msg::PointField> create_fields_point_xyzirct()
+{
+  using PointIndex = autoware::point_types::PointXYZIRCTIndex;
+  using PointType = autoware::point_types::PointXYZIRCT;
+  std::vector<sensor_msgs::msg::PointField> fields;
+  fields.resize(7);
+  fields[static_cast<std::size_t>(PointIndex::X)].name = "x";
+  fields[static_cast<std::size_t>(PointIndex::X)].offset = offsetof(PointType, x);
+  fields[static_cast<std::size_t>(PointIndex::X)].datatype = sensor_msgs::msg::PointField::FLOAT32;
+  fields[static_cast<std::size_t>(PointIndex::X)].count = 1;
+  fields[static_cast<std::size_t>(PointIndex::Y)].name = "y";
+  fields[static_cast<std::size_t>(PointIndex::Y)].offset = offsetof(PointType, y);
+  fields[static_cast<std::size_t>(PointIndex::Y)].datatype = sensor_msgs::msg::PointField::FLOAT32;
+  fields[static_cast<std::size_t>(PointIndex::Y)].count = 1;
+  fields[static_cast<std::size_t>(PointIndex::Z)].name = "z";
+  fields[static_cast<std::size_t>(PointIndex::Z)].offset = offsetof(PointType, z);
+  fields[static_cast<std::size_t>(PointIndex::Z)].datatype = sensor_msgs::msg::PointField::FLOAT32;
+  fields[static_cast<std::size_t>(PointIndex::Z)].count = 1;
+  fields[static_cast<std::size_t>(PointIndex::Intensity)].name = "intensity";
+  fields[static_cast<std::size_t>(PointIndex::Intensity)].offset = offsetof(PointType, intensity);
+  fields[static_cast<std::size_t>(PointIndex::Intensity)].datatype =
+    sensor_msgs::msg::PointField::UINT8;
+  fields[static_cast<std::size_t>(PointIndex::Intensity)].count = 1;
+  fields[static_cast<std::size_t>(PointIndex::ReturnType)].name = "return_type";
+  fields[static_cast<std::size_t>(PointIndex::ReturnType)].offset =
+    offsetof(PointType, return_type);
+  fields[static_cast<std::size_t>(PointIndex::ReturnType)].datatype =
+    sensor_msgs::msg::PointField::UINT8;
+  fields[static_cast<std::size_t>(PointIndex::ReturnType)].count = 1;
+  fields[static_cast<std::size_t>(PointIndex::Channel)].name = "channel";
+  fields[static_cast<std::size_t>(PointIndex::Channel)].offset = offsetof(PointType, channel);
+  fields[static_cast<std::size_t>(PointIndex::Channel)].datatype =
+    sensor_msgs::msg::PointField::UINT16;
+  fields[static_cast<std::size_t>(PointIndex::Channel)].count = 1;
+  fields[static_cast<std::size_t>(PointIndex::TimeStamp)].name = "time_stamp";
+  fields[static_cast<std::size_t>(PointIndex::TimeStamp)].offset = offsetof(PointType, time_stamp);
+  fields[static_cast<std::size_t>(PointIndex::TimeStamp)].datatype =
+    sensor_msgs::msg::PointField::UINT32;
+  fields[static_cast<std::size_t>(PointIndex::TimeStamp)].count = 1;
 
   return fields;
 }
@@ -506,6 +622,32 @@ inline std::vector<sensor_msgs::msg::PointField> create_fields_point_xyzcpe()
   fields[static_cast<std::size_t>(PointIndex::Entropy)].count = 1;
 
   return fields;
+}
+
+/// Whether `fields` contains every field of `target_fields` with the same name, datatype and
+/// count. Offsets, order and further fields are not constrained, so this only licenses a
+/// per-field copy into the target layout (e.g. via sensor_msgs::PointCloud2Iterator), never a
+/// reinterpret_cast; use the is_data_layout_compatible_with_point_* checks for that.
+inline bool is_data_convertible_to(
+  const std::vector<sensor_msgs::msg::PointField> & fields,
+  const std::vector<sensor_msgs::msg::PointField> & target_fields)
+{
+  return std::all_of(
+    target_fields.begin(), target_fields.end(),
+    [&fields](const sensor_msgs::msg::PointField & target) {
+      return std::any_of(
+        fields.begin(), fields.end(), [&target](const sensor_msgs::msg::PointField & field) {
+          return field.name == target.name && field.datatype == target.datatype &&
+                 field.count == target.count;
+        });
+    });
+}
+
+inline bool is_data_convertible_to(
+  const sensor_msgs::msg::PointCloud2 & input,
+  const std::vector<sensor_msgs::msg::PointField> & target_fields)
+{
+  return is_data_convertible_to(input.fields, target_fields);
 }
 
 }  // namespace autoware::point_types

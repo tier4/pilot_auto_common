@@ -16,6 +16,7 @@
 
 #include <gtest/gtest.h>
 
+#include <algorithm>
 #include <cstddef>
 #include <vector>
 
@@ -26,11 +27,14 @@ using autoware::point_types::create_fields_point_xyzi;
 using autoware::point_types::create_fields_point_xyziradrt;
 using autoware::point_types::create_fields_point_xyzirc;
 using autoware::point_types::create_fields_point_xyzircaedt;
+using autoware::point_types::create_fields_point_xyzirct;
+using autoware::point_types::is_data_convertible_to;
 using autoware::point_types::is_data_layout_compatible_with_point_xyzcpe;
 using autoware::point_types::is_data_layout_compatible_with_point_xyzi;
 using autoware::point_types::is_data_layout_compatible_with_point_xyziradrt;
 using autoware::point_types::is_data_layout_compatible_with_point_xyzirc;
 using autoware::point_types::is_data_layout_compatible_with_point_xyzircaedt;
+using autoware::point_types::is_data_layout_compatible_with_point_xyzirct;
 using sensor_msgs::msg::PointCloud2;
 using sensor_msgs::msg::PointField;
 }  // namespace
@@ -72,6 +76,22 @@ TEST(CreateFields, Xyzirc)
   EXPECT_EQ(fields[5].name, "channel");
   EXPECT_EQ(fields[5].datatype, PointField::UINT16);
   EXPECT_EQ(fields[5].offset, offsetof(autoware::point_types::PointXYZIRC, channel));
+}
+
+TEST(CreateFields, Xyzirct)
+{
+  const auto fields = create_fields_point_xyzirct();
+  ASSERT_EQ(fields.size(), 7U);
+
+  EXPECT_EQ(fields[3].name, "intensity");
+  EXPECT_EQ(fields[3].datatype, PointField::UINT8);
+  EXPECT_EQ(fields[4].name, "return_type");
+  EXPECT_EQ(fields[4].datatype, PointField::UINT8);
+  EXPECT_EQ(fields[5].name, "channel");
+  EXPECT_EQ(fields[5].datatype, PointField::UINT16);
+  EXPECT_EQ(fields[6].name, "time_stamp");
+  EXPECT_EQ(fields[6].datatype, PointField::UINT32);
+  EXPECT_EQ(fields[6].offset, offsetof(autoware::point_types::PointXYZIRCT, time_stamp));
 }
 
 TEST(CreateFields, Xyziradrt)
@@ -159,6 +179,11 @@ TEST(LayoutCompatibleRoundTrip, Xyzirc)
   EXPECT_TRUE(is_data_layout_compatible_with_point_xyzirc(create_fields_point_xyzirc()));
 }
 
+TEST(LayoutCompatibleRoundTrip, Xyzirct)
+{
+  EXPECT_TRUE(is_data_layout_compatible_with_point_xyzirct(create_fields_point_xyzirct()));
+}
+
 TEST(LayoutCompatibleRoundTrip, Xyziradrt)
 {
   EXPECT_TRUE(is_data_layout_compatible_with_point_xyziradrt(create_fields_point_xyziradrt()));
@@ -180,14 +205,33 @@ TEST(LayoutCompatibleRoundTrip, Xyzcpe)
 
 TEST(LayoutCompatibleCrossType, MismatchedTypesReturnFalse)
 {
-  // xyzi layout has FLOAT32 intensity and only 4 fields -> not xyzirc/xyziradrt/xyzircaedt
+  // xyzi layout has FLOAT32 intensity and only 4 fields -> not the others
   EXPECT_FALSE(is_data_layout_compatible_with_point_xyzirc(create_fields_point_xyzi()));
+  EXPECT_FALSE(is_data_layout_compatible_with_point_xyzirct(create_fields_point_xyzi()));
   EXPECT_FALSE(is_data_layout_compatible_with_point_xyziradrt(create_fields_point_xyzi()));
   EXPECT_FALSE(is_data_layout_compatible_with_point_xyzircaedt(create_fields_point_xyzi()));
   EXPECT_FALSE(is_data_layout_compatible_with_point_xyzcpe(create_fields_point_xyzi()));
 
+  // xyzirc layout (6 fields) -> not its wider extensions
+  EXPECT_FALSE(is_data_layout_compatible_with_point_xyzirct(create_fields_point_xyzirc()));
+  EXPECT_FALSE(is_data_layout_compatible_with_point_xyzircaedt(create_fields_point_xyzirc()));
+
+  // xyzirct layout (7 fields, UINT8 intensity) -> not the others
+  EXPECT_FALSE(is_data_layout_compatible_with_point_xyzi(create_fields_point_xyzirct()));
+  EXPECT_FALSE(is_data_layout_compatible_with_point_xyziradrt(create_fields_point_xyzirct()));
+  EXPECT_FALSE(is_data_layout_compatible_with_point_xyzircaedt(create_fields_point_xyzirct()));
+  EXPECT_FALSE(is_data_layout_compatible_with_point_xyzcpe(create_fields_point_xyzirct()));
+
   // xyzircaedt layout (10 fields, UINT8 intensity) -> not the others
   EXPECT_FALSE(is_data_layout_compatible_with_point_xyziradrt(create_fields_point_xyzircaedt()));
+  EXPECT_FALSE(is_data_layout_compatible_with_point_xyzirct(create_fields_point_xyzircaedt()));
+}
+
+TEST(LayoutCompatibleCrossType, XyzircIsAPrefixOfItsExtensions)
+{
+  // xyzirc is a prefix check by design, so every layout extending it must stay compatible.
+  EXPECT_TRUE(is_data_layout_compatible_with_point_xyzirc(create_fields_point_xyzirct()));
+  EXPECT_TRUE(is_data_layout_compatible_with_point_xyzirc(create_fields_point_xyzircaedt()));
 }
 
 //
@@ -203,6 +247,10 @@ TEST(LayoutCompatiblePointCloud2Overload, ForwardsToFields)
   PointCloud2 cloud_xyzirc;
   cloud_xyzirc.fields = create_fields_point_xyzirc();
   EXPECT_TRUE(is_data_layout_compatible_with_point_xyzirc(cloud_xyzirc));
+
+  PointCloud2 cloud_xyzirct;
+  cloud_xyzirct.fields = create_fields_point_xyzirct();
+  EXPECT_TRUE(is_data_layout_compatible_with_point_xyzirct(cloud_xyzirct));
 
   PointCloud2 cloud_xyziradrt;
   cloud_xyziradrt.fields = create_fields_point_xyziradrt();
@@ -220,6 +268,7 @@ TEST(LayoutCompatiblePointCloud2Overload, ForwardsToFields)
   PointCloud2 empty;
   EXPECT_FALSE(is_data_layout_compatible_with_point_xyzi(empty));
   EXPECT_FALSE(is_data_layout_compatible_with_point_xyzirc(empty));
+  EXPECT_FALSE(is_data_layout_compatible_with_point_xyzirct(empty));
   EXPECT_FALSE(is_data_layout_compatible_with_point_xyziradrt(empty));
   EXPECT_FALSE(is_data_layout_compatible_with_point_xyzircaedt(empty));
   EXPECT_FALSE(is_data_layout_compatible_with_point_xyzcpe(empty));
@@ -346,4 +395,66 @@ TEST(LayoutCompatibleFieldCount, ExtraTrailingFieldsFollowTypeSpecificPolicy)
     fields.emplace_back();  // 7 != 6
     EXPECT_FALSE(is_data_layout_compatible_with_point_xyzcpe(fields));
   }
+}
+
+//
+// is_data_convertible_to: by-name presence with matching datatype and count, offsets ignored
+//
+
+TEST(ConvertibleTo, EveryLayoutConvertsToItself)
+{
+  EXPECT_TRUE(is_data_convertible_to(create_fields_point_xyzi(), create_fields_point_xyzi()));
+  EXPECT_TRUE(is_data_convertible_to(create_fields_point_xyzirc(), create_fields_point_xyzirc()));
+  EXPECT_TRUE(is_data_convertible_to(create_fields_point_xyzirct(), create_fields_point_xyzirct()));
+  EXPECT_TRUE(
+    is_data_convertible_to(create_fields_point_xyziradrt(), create_fields_point_xyziradrt()));
+  EXPECT_TRUE(
+    is_data_convertible_to(create_fields_point_xyzircaedt(), create_fields_point_xyzircaedt()));
+  EXPECT_TRUE(is_data_convertible_to(create_fields_point_xyzcpe(), create_fields_point_xyzcpe()));
+}
+
+TEST(ConvertibleTo, DroppingFieldsIsAllowedRegardlessOfOffsets)
+{
+  // xyzircaedt -> xyzirct drops azimuth/elevation/distance; time_stamp moves from offset 28 to 16
+  EXPECT_TRUE(
+    is_data_convertible_to(create_fields_point_xyzircaedt(), create_fields_point_xyzirct()));
+  EXPECT_TRUE(
+    is_data_convertible_to(create_fields_point_xyzircaedt(), create_fields_point_xyzirc()));
+  EXPECT_TRUE(is_data_convertible_to(create_fields_point_xyzirct(), create_fields_point_xyzirc()));
+}
+
+TEST(ConvertibleTo, FieldOrderDoesNotMatter)
+{
+  auto fields = create_fields_point_xyzirct();
+  std::reverse(fields.begin(), fields.end());
+  EXPECT_TRUE(is_data_convertible_to(fields, create_fields_point_xyzirct()));
+}
+
+TEST(ConvertibleTo, MissingFieldIsRejected)
+{
+  EXPECT_FALSE(is_data_convertible_to(create_fields_point_xyzirc(), create_fields_point_xyzirct()));
+  EXPECT_FALSE(is_data_convertible_to(create_fields_point_xyzi(), create_fields_point_xyzirc()));
+}
+
+TEST(ConvertibleTo, SameNameDifferentDatatypeIsRejected)
+{
+  auto fields = create_fields_point_xyzirc();
+  fields[static_cast<std::size_t>(autoware::point_types::PointXYZIRCIndex::Intensity)].datatype =
+    PointField::FLOAT32;
+  EXPECT_FALSE(is_data_convertible_to(fields, create_fields_point_xyzirc()));
+}
+
+TEST(ConvertibleTo, SameNameDifferentCountIsRejected)
+{
+  auto fields = create_fields_point_xyzirc();
+  fields[static_cast<std::size_t>(autoware::point_types::PointXYZIRCIndex::X)].count = 2;
+  EXPECT_FALSE(is_data_convertible_to(fields, create_fields_point_xyzirc()));
+}
+
+TEST(ConvertibleTo, PointCloud2OverloadForwardsToFields)
+{
+  PointCloud2 cloud;
+  cloud.fields = create_fields_point_xyzircaedt();
+  EXPECT_TRUE(is_data_convertible_to(cloud, create_fields_point_xyzirct()));
+  EXPECT_FALSE(is_data_convertible_to(cloud, create_fields_point_xyzcpe()));
 }
